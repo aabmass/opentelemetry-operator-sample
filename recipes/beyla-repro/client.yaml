@@ -1,0 +1,29 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: client
+  labels:
+    app: client
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: client
+  template:
+    metadata:
+      labels:
+        app: client
+    spec:
+      containers:
+      - name: client
+        image: python:3.11
+        command: ["python", "-u", "-c"]
+        args:
+          - |
+            import urllib.request
+            import time
+
+            while True:
+              with urllib.request.urlopen("http://server:9080") as res:
+                print(res.code, res.msg)
+              time.sleep(1)

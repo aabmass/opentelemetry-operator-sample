@@ -16,8 +16,10 @@ package internal
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log/slog"
+	"os"
 	"strings"
 	"time"
 
@@ -57,6 +59,9 @@ func QueryPrometheus(
 	}
 	slog.InfoContext(ctx, "Got metrics", "metrics", res)
 	slog.InfoContext(ctx, "type", "type", res.Type())
+
+	bytes, _ := json.Marshal(res)
+	fmt.Fprintln(os.Stderr, string(bytes))
 
 	vec, ok := res.(model.Vector)
 	if !ok {

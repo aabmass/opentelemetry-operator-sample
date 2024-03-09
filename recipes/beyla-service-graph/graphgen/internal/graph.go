@@ -15,6 +15,7 @@
 package internal
 
 import (
+	"fmt"
 	"io"
 	"log/slog"
 
@@ -98,7 +99,7 @@ func getCNode(node *Node, graph *cgraph.Graph, nodes map[*Node]*cgraph.Node) (*c
 		return nil, err
 	}
 	if node.Name != "" {
-		cnode.SetLabel(node.Name)
+		cnode.SetLabel(fmt.Sprintf("%s (%s)", node.Name, node.Ip))
 	}
 	cnode.SetOrdering(cgraph.OutOrdering)
 
