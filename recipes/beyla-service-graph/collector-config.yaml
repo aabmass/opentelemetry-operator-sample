@@ -54,31 +54,38 @@ spec:
         keys:
           - server.address
           - client.address
-      # Metrics are generated from server spans only, so k8s.pod.name already contains the server pod
-      transform/k8spodname_to_server:
+      # Metrics are generated from server spans only, so k8s.* already contains the server info
+      transform/k8s_to_server:
         metric_statements:
           - context: resource
             statements:
-            - set(attributes["server"], attributes["k8s.pod.name"])
+            - set(attributes["server"], attributes["k8s.deployment.name"])
+            - set(attributes["server_k8s_deployment_name"], attributes["k8s.deployment.name"])
+            - set(attributes["server_k8s_pod_name"], attributes["k8s.pod.name"])
             - delete_key(attributes, "k8s.pod.name")
+            - delete_key(attributes, "k8s.deployment.name")
             # Put the client address into k8s.pod.ip for k8sattributes processor to detect the client pod name
             - set(attributes["k8s.pod.ip"], attributes["client.address"])
-      # Add k8s.pod.name
+      # Add k8s.* for the client
       k8sattributes:
         extract:
           metadata:
             - k8s.pod.name
+            - k8s.deployment.name
         pod_association:
           - sources:
             - from: resource_attribute
               name: k8s.pod.ip
-      # Moves annotated k8s.pod.name to client.address
-      transform/k8spodname_to_client:
+      # Moves annotated k8s.* for the client client.address
+      transform/k8s_to_client:
         metric_statements:
           - context: resource
             statements:
-            - set(attributes["client"], attributes["k8s.pod.name"])
+            - set(attributes["client"], attributes["k8s.deployment.name"])
+            - set(attributes["client_k8s_deployment_name"], attributes["k8s.deployment.name"])
+            - set(attributes["client_k8s_pod_name"], attributes["k8s.pod.name"])
             - delete_key(attributes, "k8s.pod.name")
+            - delete_key(attributes, "k8s.deployment.name")
             - delete_key(attributes, "k8s.pod.ip")
       transform/servicegraphconventions:
         metric_statements:
@@ -104,8 +111,8 @@ spec:
         metric:
           resource_filters:
             - regex: 'pod'
-            - regex: client
-            - regex: server
+            - regex: client.*
+            - regex: server.*
       logging:
         loglevel: debug
     service:
@@ -118,9 +125,9 @@ spec:
           receivers: [spanmetrics/httpservicegraph]
           processors:
           - groupbyattrs
-          - transform/k8spodname_to_server
+          - transform/k8s_to_server
           - k8sattributes
-          - transform/k8spodname_to_client
+          - transform/k8s_to_client
           - transform/servicegraphconventions
           - resourcedetection
           exporters: [googlemanagedprometheus]
